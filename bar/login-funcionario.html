@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login do Funcionário</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ✅ PWA (SOMENTE ISSO) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#020617">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card{
+  background:#0f172a;
+  padding:28px;
+  border-radius:18px;
+  width:100%;
+  max-width:360px;
+}
+h3{
+  margin-top:0;
+  text-align:center;
+}
+input,button{
+  width:100%;
+  padding:12px;
+  margin-top:12px;
+  border-radius:10px;
+  border:none;
+}
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+.msg{
+  margin-top:12px;
+  font-size:14px;
+  text-align:center;
+  color:#f87171;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h3>🔐 Login do Funcionário</h3>
+
+  <input id="pin" placeholder="Digite seu PIN" maxlength="6">
+
+  <button onclick="logar()">Entrar</button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+/* ===== SUPABASE ===== */
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* ===== APP_ID VINDO DO LINK ===== */
+const params = new URLSearchParams(window.location.search);
+const app_id = params.get("app_id");
+
+if(!app_id){
+  document.getElementById("msg").innerText =
+    "Bar não identificado.";
+}
+
+/* ===== LOGIN ===== */
+async function logar(){
+  const pin = document.getElementById("pin").value.trim();
+  const msg = document.getElementById("msg");
+
+  msg.innerText = "";
+
+  if(!pin){
+    msg.innerText = "Informe o PIN";
+    return;
+  }
+
+  const { data, error } = await sb
+    .from("usuarios")
+    .select("*")
+    .eq("pin", pin)
+    .eq("app_id", app_id)
+    .eq("ativo", true)
+    .single();
+
+  if(error || !data){
+    msg.innerText = "PIN inválido";
+    return;
+  }
+
+  localStorage.setItem("funcionario_logado", JSON.stringify(data));
+
+  if(data.tipo === "garcom"){
+    location.href = "mesas.html";
+  }
+  else if(data.tipo === "caixa"){
+    location.href = "caixa.html";
+  }
+  else if(data.tipo === "cozinha"){
+    location.href = "cozinha.html";
+  }
+  else{
+    msg.innerText = "Função inválida";
+  }
+}
+
+/* ✅ REGISTRO DO SERVICE WORKER (PWA DO BAR) */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>

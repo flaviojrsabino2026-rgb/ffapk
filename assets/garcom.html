@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel do Garçom</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.container{
+  max-width:1000px;
+  margin:auto;
+  padding:24px;
+}
+h2{ margin-top:0; }
+
+.pedido{
+  background:#0f172a;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:18px;
+  border-left:6px solid #2563eb;
+}
+.pedido.pronto{
+  border-left-color:#22c55e;
+  box-shadow:0 0 18px rgba(34,197,94,.5);
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.mesa{
+  font-size:20px;
+  font-weight:900;
+}
+.status{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+.preparando{ background:#eab308; color:#000 }
+.pronto{ background:#22c55e; color:#000 }
+
+.itens{
+  margin-top:10px;
+}
+.item{
+  display:flex;
+  justify-content:space-between;
+  padding:6px 0;
+  border-bottom:1px solid #1e293b;
+}
+
+.acoes{
+  margin-top:14px;
+}
+button{
+  padding:10px 18px;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.entregue{
+  background:#22c55e;
+  color:#000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>🧑‍🍺 Painel do Garçom</h2>
+  <div id="lista">Carregando pedidos...</div>
+</div>
+
+<script>
+/* ================= SUPABASE ================= */
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* ================= APP ================= */
+const params = new URLSearchParams(location.search);
+const app_id = params.get("app_id") || localStorage.getItem("app_id");
+
+if(!app_id){
+  document.body.innerHTML = "<h2 style='padding:20px'>App inválido</h2>";
+  throw "";
+}
+
+localStorage.setItem("app_id", app_id);
+const lista = document.getElementById("lista");
+
+/* ================= CARREGAR PEDIDOS ================= */
+async function carregarPedidos(){
+  const { data, error } = await sb
+    .from("pedidos")
+    .select(`
+      id,
+      status,
+      mesa_id,
+      mesas ( numero_mesa ),
+      pedido_itens (
+        nome_produto,
+        quantidade
+      )
+    `)
+    .eq("app_id", app_id)
+    .not("mesa_id","is",null)
+    .in("status", ["aceito","finalizado"])
+    .order("created_at",{ ascending:true });
+
+  if(error){
+    console.error(error);
+    lista.innerHTML = "Erro ao carregar pedidos";
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  if(!data || data.length === 0){
+    lista.innerHTML = "<p>Nenhum pedido de mesa</p>";
+    return;
+  }
+
+  data.forEach(pedido=>{
+    const pronto = pedido.status === "finalizado";
+
+    lista.innerHTML += `
+      <div class="pedido ${pronto ? 'pronto' : ''}">
+        <div class="top">
+          <div class="mesa">Mesa ${pedido.mesas.numero_mesa}</div>
+          <div class="status ${pronto ? 'pronto' : 'preparando'}">
+            ${pronto ? 'PRONTO' : 'PREPARANDO'}
+          </div>
+        </div>
+
+        <div class="itens">
+          ${pedido.pedido_itens.map(i=>`
+            <div class="item">
+              <span>${i.quantidade}x ${i.nome_produto}</span>
+            </div>
+          `).join("")}
+        </div>
+
+        ${
+          pronto
+          ? `<div class="acoes">
+               <button class="entregue" onclick="marcarEntregue('${pedido.id}')">
+                 ✔ Entregue ao cliente
+               </button>
+             </div>`
+          : ``
+        }
+      </div>
+    `;
+  });
+}
+
+/* ================= AÇÃO GARÇOM ================= */
+async function marcarEntregue(id){
+  await sb.from("pedidos")
+    .update({ status:"entregue" })
+    .eq("id", id)
+    .eq("app_id", app_id);
+
+  carregarPedidos();
+}
+
+/* ================= AUTO REFRESH ================= */
+carregarPedidos();
+setInterval(carregarPedidos, 3000);
+</script>
+
+</body>
+</html>

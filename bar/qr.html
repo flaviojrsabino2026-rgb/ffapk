@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>QR da Mesa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#020617;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.card{
+  background:#0f172a;
+  padding:30px;
+  border-radius:18px;
+  text-align:center;
+}
+#qrcode{
+  margin:20px auto;
+}
+button{
+  padding:10px 18px;
+  border:none;
+  border-radius:10px;
+  background:#2563eb;
+  color:#fff;
+  cursor:pointer;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2 id="titulo"></h2>
+  <div id="qrcode"></div>
+  <button onclick="window.print()">🖨️ Imprimir</button>
+</div>
+
+<script>
+/* ================= CONTEXTO ================= */
+const params = new URLSearchParams(location.search);
+const mesa = params.get("mesa");
+
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+
+if(!mesa || !admin?.app_id){
+  alert("Dados inválidos para gerar QR da mesa");
+  throw "";
+}
+
+document.getElementById("titulo").innerText = `Mesa ${mesa}`;
+
+/* ================= URL CORRETA DA MESA ================= */
+/* 🚫 NÃO É index.html */
+/* ✅ É mesa.html */
+const url = `https://anajuliafarias659-cloud.github.io/ffsolucoes/bar/mesa.html?mesa=${mesa}&app_id=${admin.app_id}`;
+
+/* ================= GERAR QR ================= */
+new QRCode(document.getElementById("qrcode"), {
+  text: url,
+  width: 220,
+  height: 220,
+  correctLevel: QRCode.CorrectLevel.H
+});
+</script>
+
+</body>
+</html>

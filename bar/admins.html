@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Usuários do Bar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.topo{
+  background:#0f172a;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:24px;
+}
+.box{
+  background:#0f172a;
+  padding:20px;
+  border-radius:14px;
+  margin-bottom:20px;
+}
+input,select,button{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border-radius:8px;
+  border:none;
+}
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+.usuario{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  border-bottom:1px solid #1e293b;
+  padding:12px 0;
+}
+.badge{
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:12px;
+}
+.garcom{background:#2563eb}
+.caixa{background:#facc15;color:#000}
+.cozinha{background:#22c55e;color:#000}
+.qr{
+  background:#020617;
+  padding:8px;
+  border-radius:10px;
+}
+.btn-excluir{
+  background:#1e293b;
+  color:#94a3b8;
+  border:1px solid #334155;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<script>
+/* ===== SUPABASE ===== */
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* ===== SESSÃO DO BAR ===== */
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+
+if(!admin || !admin.app_id){
+  alert("Sessão inválida");
+  location.href="admin.html";
+}
+
+/* 🔐 CÓDIGO DE ENCERRAMENTO */
+const CODIGO_ENCERRAMENTO = "9999";
+</script>
+
+<div class="topo">
+  <h3>⚙️ Usuários do Bar</h3>
+  <button onclick="location.href='admin.html'">Voltar</button>
+</div>
+
+<div class="container">
+
+  <!-- CRIAR USUÁRIO -->
+  <div class="box">
+    <h4>Criar Funcionário</h4>
+
+    <input id="nome" placeholder="Nome do funcionário">
+
+    <select id="tipo">
+      <option value="garcom">Garçom</option>
+      <option value="caixa">Caixa</option>
+      <option value="cozinha">Cozinha</option>
+    </select>
+
+    <input id="pin" placeholder="PIN (ex: 1234)" maxlength="6">
+
+    <button onclick="criarUsuario()">Criar Usuário</button>
+  </div>
+
+  <!-- LISTA -->
+  <div class="box">
+    <h4>Funcionários cadastrados</h4>
+    <div id="lista"></div>
+  </div>
+
+</div>
+
+<script>
+/* ===== CRIAR USUÁRIO ===== */
+async function criarUsuario(){
+  const nome = document.getElementById("nome").value.trim();
+  const tipo = document.getElementById("tipo").value;
+  const pin  = document.getElementById("pin").value.trim();
+
+  if(!nome || !pin){
+    alert("Informe nome e PIN");
+    return;
+  }
+
+  await sb.from("usuarios").insert({
+    nome,
+    tipo,
+    pin,
+    app_id: admin.app_id,
+    ativo: true
+  });
+
+  document.getElementById("nome").value = "";
+  document.getElementById("pin").value = "";
+
+  carregarUsuarios();
+}
+
+/* ===== LISTAR USUÁRIOS DO MESMO BAR ===== */
+async function carregarUsuarios(){
+  const { data } = await sb
+    .from("usuarios")
+    .select("id,nome,tipo")
+    .eq("app_id", admin.app_id)
+    .eq("ativo", true)
+    .order("nome");
+
+  const div = document.getElementById("lista");
+  div.innerHTML = "";
+
+  (data || []).forEach(u=>{
+    const box = document.createElement("div");
+    box.className = "usuario";
+
+    box.innerHTML = `
+      <div>
+        <strong>${u.nome}</strong><br>
+        <span class="badge ${u.tipo}">${u.tipo.toUpperCase()}</span>
+      </div>
+
+      <div class="qr">
+        <canvas id="qr-${u.id}" width="110"></canvas>
+      </div>
+
+      <div>
+        <button class="btn-excluir">Excluir</button>
+      </div>
+    `;
+
+    div.appendChild(box);
+
+    /* 🔗 LINK CORRETO DO LOGIN DO FUNCIONÁRIO */
+    const link =
+      location.origin +
+      "/ffsolucoes/bar/login-funcionario.html?app_id=" +
+      admin.app_id;
+
+    QRCode.toCanvas(
+      document.getElementById("qr-" + u.id),
+      link,
+      { width:110 }
+    );
+
+    box.querySelector(".btn-excluir").onclick = async () => {
+      const codigo = prompt("🔐 Código de encerramento:");
+
+      if(codigo !== CODIGO_ENCERRAMENTO){
+        alert("Código inválido");
+        return;
+      }
+
+      if(!confirm(`Excluir ${u.nome}?`)) return;
+
+      await sb.from("usuarios")
+        .update({ ativo:false })
+        .eq("id", u.id);
+
+      carregarUsuarios();
+    };
+  });
+}
+
+carregarUsuarios();
+</script>
+
+</body>
+</html>

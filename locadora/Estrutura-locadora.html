@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Configurações do Site Público</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.topo{
+  background:#0f172a;
+  padding:16px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.container{
+  max-width:700px;
+  margin:40px auto;
+  background:#0f172a;
+  padding:24px;
+  border-radius:20px;
+}
+label{font-size:13px;opacity:.8}
+input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  margin:6px 0 14px;
+}
+button{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+.voltar{
+  background:#334155;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<script>
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+
+if(!admin || admin.tipo !== "locadora"){
+  alert("Acesso não autorizado");
+  window.location.href = "../auth/login.html";
+}
+</script>
+
+<div class="topo">
+  <h2>🌐 Site Público</h2>
+  <button class="voltar" onclick="history.back()">Voltar</button>
+</div>
+
+<div class="container">
+
+  <label>WhatsApp</label>
+  <input id="whatsapp" placeholder="5588999999999">
+
+  <label>Logo (URL)</label>
+  <input id="logo">
+
+  <label>Cor Primária</label>
+  <input id="corPrimaria" type="color">
+
+  <label>Cor Secundária</label>
+  <input id="corSecundaria" type="color">
+
+  <button onclick="salvar()">Salvar Configurações</button>
+
+</div>
+
+<script>
+const supabase = supabasejs.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+const app_id = admin.app_id;
+
+/* carregar config */
+async function carregar(){
+  const { data } = await supabase
+    .from("config_app")
+    .select("*")
+    .eq("app_id", app_id)
+    .maybeSingle();
+
+  if(data){
+    whatsapp.value = data.whatsapp || "";
+    logo.value = data.logo_url || "";
+    corPrimaria.value = data.cor_primaria || "#e30613";
+    corSecundaria.value = data.cor_secundaria || "#020617";
+  }
+}
+carregar();
+
+/* salvar */
+async function salvar(){
+  const payload = {
+    app_id,
+    whatsapp: whatsapp.value,
+    logo_url: logo.value,
+    cor_primaria: corPrimaria.value,
+    cor_secundaria: corSecundaria.value
+  };
+
+  await supabase
+    .from("config_app")
+    .upsert(payload, { onConflict:"app_id" });
+
+  alert("Configurações salvas com sucesso!");
+}
+</script>
+
+</body>
+</html>

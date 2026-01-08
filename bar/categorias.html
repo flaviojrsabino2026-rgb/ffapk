@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Categorias</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.topo{
+  background:#0f172a;
+  padding:16px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.container{
+  padding:32px;
+  max-width:900px;
+  margin:auto;
+}
+input, button{
+  padding:12px;
+  border-radius:10px;
+  border:none;
+}
+input{
+  width:260px;
+}
+button{
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+.lista{
+  margin-top:24px;
+}
+.item{
+  background:#0f172a;
+  padding:14px 18px;
+  border-radius:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.desativar{
+  background:#ef4444;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topo">
+  <h2>📂 Categorias</h2>
+  <button onclick="history.back()">⬅ Voltar</button>
+</div>
+
+<div class="container">
+
+  <h3>Nova categoria</h3>
+  <input id="nome" placeholder="Ex: Bebidas">
+  <button onclick="criar()">Salvar</button>
+
+  <div class="lista" id="lista"></div>
+
+</div>
+
+<script>
+/* 🔐 admin logado */
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+if(!admin){
+  alert("Sessão expirada");
+  location.href = "../auth/login.html";
+}
+
+/* ✅ Supabase REAL */
+const supabaseClient = window.supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* ➕ criar categoria */
+async function criar(){
+  const nome = document.getElementById("nome").value.trim();
+  if(!nome) return alert("Informe o nome da categoria");
+
+  const { error } = await supabaseClient
+    .from("categorias")
+    .insert({
+      app_id: admin.app_id,
+      nome,
+      ativo: true
+    });
+
+  if(error){
+    console.error(error);
+    alert("Erro ao salvar categoria");
+    return;
+  }
+
+  document.getElementById("nome").value = "";
+  listar();
+}
+
+/* 📋 listar categorias */
+async function listar(){
+  const { data, error } = await supabaseClient
+    .from("categorias")
+    .select("*")
+    .eq("app_id", admin.app_id)
+    .eq("ativo", true)
+    .order("created_at", { ascending: true });
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  if(data.length === 0){
+    lista.innerHTML = "<p>Nenhuma categoria cadastrada</p>";
+    return;
+  }
+
+  data.forEach(cat=>{
+    const div = document.createElement("div");
+    div.className="item";
+    div.innerHTML = `
+      <b>${cat.nome}</b>
+      <button class="desativar" onclick="desativar('${cat.id}')">Desativar</button>
+    `;
+    lista.appendChild(div);
+  });
+}
+
+/* ❌ desativar */
+async function desativar(id){
+  if(!confirm("Desativar categoria?")) return;
+
+  await supabaseClient
+    .from("categorias")
+    .update({ ativo:false })
+    .eq("id", id);
+
+  listar();
+}
+
+/* init */
+listar();
+</script>
+
+</body>
+</html>

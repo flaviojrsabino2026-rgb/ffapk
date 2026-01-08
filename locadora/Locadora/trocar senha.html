@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Alterar Senha do Wi‑Fi</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .box {
+      max-width: 400px;
+      margin: auto;
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    p.obs {
+      font-size: 14px;
+      color: #555;
+      margin-top: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h2>🔐 Alterar Senha do Wi‑Fi</h2>
+
+    <label>Nova senha do Wi‑Fi</label>
+    <input type="password" id="senha" placeholder="Digite a nova senha">
+
+    <label>Confirme seu CPF</label>
+    <input type="text" id="cpf" placeholder="Somente números">
+
+    <button onclick="enviarWhats()">Enviar pedido pelo WhatsApp</button>
+
+    <p class="obs">Observação: A nova senha estará disponível em até 30 minutos.</p>
+  </div>
+
+  <script>
+    function enviarWhats() {
+      const senha = document.getElementById("senha").value;
+      const cpf = document.getElementById("cpf").value;
+
+      if (senha.length < 8) {
+        alert("A senha deve ter no mínimo 8 caracteres.");
+        return;
+      }
+
+      if (cpf.length !== 11) {
+        alert("CPF inválido.");
+        return;
+      }
+
+      const mensagem =
+        `Olá, gostaria de alterar a senha do Wi-Fi.%0A%0A` +
+        `🔐 Nova senha: ${senha}%0A` +
+        `🧾 CPF do titular: ${cpf}%0A%0A` +
+        `Observação: A nova senha estará disponível em até 30 minutos.`;
+
+      const telefone = "5599999999999"; // SEU NÚMERO COM DDI
+      const url = `https://wa.me/${telefone}?text=${mensagem}`;
+
+      window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>

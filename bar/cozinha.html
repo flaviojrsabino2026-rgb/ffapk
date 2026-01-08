@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cozinha | Pedidos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#020617;
+  --border:#1e293b;
+  --text:#ffffff;
+  --muted:#94a3b8;
+  --novo:#eab308;
+  --preparo:#38bdf8;
+  --finalizado:#22c55e;
+  --cancelado:#ef4444;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,'Segoe UI',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  padding:18px;
+  border-bottom:1px solid var(--border);
+  font-size:20px;
+  font-weight:600;
+}
+
+.container{
+  padding:20px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:16px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+}
+
+.card h3{
+  margin:0 0 6px;
+  font-size:18px;
+}
+
+.meta{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+
+.itens{
+  font-size:14px;
+  margin-bottom:12px;
+}
+
+.itens div{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+
+.total{
+  font-weight:700;
+  margin-bottom:12px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+button{
+  border:none;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.novo{background:var(--novo)}
+.preparo{background:var(--preparo)}
+.finalizado{background:var(--finalizado)}
+.cancelar{background:var(--cancelado);color:#fff}
+
+.empty{
+  grid-column:1/-1;
+  text-align:center;
+  color:var(--muted);
+  margin-top:40px;
+}
+</style>
+</head>
+
+<body>
+
+<header>🍳 Cozinha — Pedidos Ativos</header>
+
+<div class="container" id="lista"></div>
+
+<audio id="alerta" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+<script>
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+const params = new URLSearchParams(location.search);
+const app_id = params.get("app");
+
+const lista = document.getElementById("lista");
+const alerta = document.getElementById("alerta");
+
+/* CARREGAR PEDIDOS */
+async function carregarPedidos(){
+  const { data, error } = await sb
+    .from("pedidos")
+    .select("*")
+    .eq("app_id", app_id)
+    .in("status", ["novo","preparo","entregue"])
+    .order("created_at", { ascending:true });
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  renderizar(data || []);
+}
+
+/* RENDER */
+function renderizar(pedidos){
+  lista.innerHTML = "";
+
+  if(pedidos.length === 0){
+    lista.innerHTML = `<div class="empty">Nenhum pedido no momento</div>`;
+    return;
+  }
+
+  pedidos.forEach(p=>{
+    const mesa = p.itens?.mesa || "-";
+    const produtos = p.itens?.produtos || [];
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <h3>Mesa ${mesa}</h3>
+      <div class="meta">
+        ${new Date(p.created_at).toLocaleTimeString()} · Status: ${p.status}
+      </div>
+
+      <div class="itens">
+        ${produtos.map(i=>`
+          <div>
+            <span>${i.qtd}x ${i.nome}</span>
+            <span>R$ ${(i.qtd * i.preco).toFixed(2)}</span>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="total">Total: R$ ${Number(p.total).toFixed(2)}</div>
+
+      <div class="actions">
+        ${p.status==="novo" ? `<button class="novo" onclick="mudarStatus('${p.id}','preparo')">Preparar</button>` : ""}
+        ${p.status==="preparo" ? `<button class="preparo" onclick="mudarStatus('${p.id}','entregue')">Entregar</button>` : ""}
+        ${p.status==="entregue" ? `<button class="finalizado" onclick="mudarStatus('${p.id}','finalizado')">Finalizar</button>` : ""}
+        <button class="cancelar" onclick="mudarStatus('${p.id}','cancelado')">Cancelar</button>
+      </div>
+    `;
+
+    lista.appendChild(card);
+  });
+}
+
+/* STATUS */
+async function mudarStatus(id,status){
+  await sb.from("pedidos").update({ status }).eq("id", id);
+}
+
+/* REALTIME */
+sb.channel("pedidos-realtime")
+  .on(
+    "postgres_changes",
+    { event:"INSERT", schema:"public", table:"pedidos" },
+    payload=>{
+      if(payload.new.app_id === app_id){
+        alerta.play();
+        carregarPedidos();
+      }
+    }
+  )
+  .on(
+    "postgres_changes",
+    { event:"UPDATE", schema:"public", table:"pedidos" },
+    payload=>{
+      if(payload.new.app_id === app_id){
+        carregarPedidos();
+      }
+    }
+  )
+  .subscribe();
+
+carregarPedidos();
+</script>
+
+</body>
+</html>

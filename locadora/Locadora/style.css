@@ -1,0 +1,91 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #ff8c00;
+}
+
+.topo {
+  height: 55px;
+  background: #ff7a00;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.topo i {
+  position: absolute;
+  left: 15px;
+  font-size: 20px;
+}
+
+.video-area {
+  background: white;
+  margin: 15px;
+  height: 200px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play {
+  width: 70px;
+  height: 70px;
+  background: red;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play i {
+  color: white;
+  font-size: 28px;
+}
+
+.menu {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.app-btn {
+  background: #0a3b6e;
+  color: white;
+  text-decoration: none;
+  border-radius: 16px;
+  padding: 18px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 95px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.app-btn i {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.app-btn span {
+  font-size: 13px;
+}
+
+.app-btn:active {
+  transform: scale(0.95);
+}
+
+.destaque {
+  background: #c62828;
+}

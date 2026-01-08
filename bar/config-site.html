@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Configurar Site Público</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#020617;
+  --border:#1e293b;
+  --primary:#22c55e;
+  --text:#ffffff;
+  --muted:#94a3b8;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(135deg,#020617,#020617dd);
+  color:var(--text);
+  min-height:100vh;
+}
+.container{
+  max-width:480px;
+  margin:40px auto;
+  padding:28px;
+  background:var(--card);
+  border-radius:18px;
+  border:1px solid var(--border);
+}
+h2,h3{text-align:center;}
+label{display:block;margin-top:14px;font-size:.9rem;}
+input,select,button{
+  width:100%;
+  padding:14px;
+  margin-top:6px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#020617;
+  color:#fff;
+}
+input[type="checkbox"]{width:auto;margin-right:8px;}
+button{
+  background:var(--primary);
+  color:#022c22;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  margin-top:20px;
+}
+.preview{
+  margin-top:10px;
+  max-height:80px;
+  max-width:100%;
+  object-fit:contain;
+  background:#fff;
+  padding:6px;
+  border-radius:10px;
+  display:none;
+}
+small{color:var(--muted);}
+.link{margin-top:20px;font-size:.85rem;word-break:break-all;color:var(--muted);}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>⚙️ Configurar Site Público</h2>
+
+<label>Nome do site</label>
+<input id="nome_site">
+
+<label>Logo</label>
+<input id="logo_file" type="file" accept="image/*">
+<img id="logo_preview" class="preview">
+<label><input type="checkbox" id="remover_logo"> Remover logo</label>
+
+<label>Banner do cardápio</label>
+<input id="banner_file" type="file" accept="image/*">
+<img id="banner_preview" class="preview">
+<label><input type="checkbox" id="remover_banner"> Remover banner</label>
+
+<label>WhatsApp</label>
+<input id="whatsapp">
+<small id="wa_preview"></small>
+
+<h3>🛒 Funcionamento</h3>
+
+<label>Modo do cardápio</label>
+<select id="modo_cardapio">
+  <option value="venda">Permitir compras</option>
+  <option value="vitrine">Somente vitrine</option>
+</select>
+
+<label>Horário de abertura</label>
+<input type="time" id="horario_abertura">
+
+<label>Horário de fechamento</label>
+<input type="time" id="horario_fechamento">
+
+<h3>🎨 Aparência</h3>
+
+<label>Cor principal</label>
+<input type="color" id="cor_primaria">
+
+<label style="margin-top:18px">
+  <input type="checkbox" id="mostrar_categorias">
+  Mostrar categorias no cardápio
+</label>
+
+<button onclick="salvar()">Salvar configurações</button>
+
+<div class="link">
+Link público:<br>
+<span id="link"></span>
+</div>
+</div>
+
+<script>
+// ================= SUPABASE =================
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+// ================= ADMIN =================
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+if(!admin?.app_id){
+  alert("Sessão expirada");
+  location.href="../auth/login.html";
+}
+const app_id = admin.app_id;
+
+// ================= ELEMENTOS =================
+const nome_site = document.getElementById("nome_site");
+const logo_file = document.getElementById("logo_file");
+const banner_file = document.getElementById("banner_file");
+const logo_preview = document.getElementById("logo_preview");
+const banner_preview = document.getElementById("banner_preview");
+const remover_logo = document.getElementById("remover_logo");
+const remover_banner = document.getElementById("remover_banner");
+const whatsapp = document.getElementById("whatsapp");
+const wa_preview = document.getElementById("wa_preview");
+const modo_cardapio = document.getElementById("modo_cardapio");
+const horario_abertura = document.getElementById("horario_abertura");
+const horario_fechamento = document.getElementById("horario_fechamento");
+const cor_primaria = document.getElementById("cor_primaria");
+const layout_categorias = document.getElementById("mostrar_categorias");
+
+// ================= LINK =================
+link.innerText =
+  `http://127.0.0.1:5500/public/index.html?app_id=${app_id}`;
+
+// ================= PREVIEWS =================
+logo_file.onchange = ()=>{
+  const f = logo_file.files[0];
+  if(f){
+    logo_preview.src = URL.createObjectURL(f);
+    logo_preview.style.display="block";
+    remover_logo.checked=false;
+  }
+};
+banner_file.onchange = ()=>{
+  const f = banner_file.files[0];
+  if(f){
+    banner_preview.src = URL.createObjectURL(f);
+    banner_preview.style.display="block";
+    remover_banner.checked=false;
+  }
+};
+remover_logo.onchange = ()=>{
+  if(remover_logo.checked){
+    logo_preview.style.display="none";
+    logo_file.value="";
+  }
+};
+remover_banner.onchange = ()=>{
+  if(remover_banner.checked){
+    banner_preview.style.display="none";
+    banner_file.value="";
+  }
+};
+whatsapp.oninput=e=>{
+  const n=e.target.value.replace(/\D/g,"");
+  wa_preview.innerText=n?`https://wa.me/55${n}`:"";
+};
+
+// ================= UPLOAD =================
+async function uploadArquivo(file,bucket){
+  if(!file) return null;
+  const ext=file.name.split(".").pop();
+  const path=`${app_id}/${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from(bucket).upload(path,file,{upsert:true});
+  if(error) return null;
+  return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+// ================= SALVAR =================
+async function salvar(){
+  if(!nome_site.value.trim()){
+    alert("Informe o nome do site");
+    return;
+  }
+
+  const payload = {
+    nome_site: nome_site.value.trim(),
+    whatsapp: whatsapp.value || null,
+    modo_cardapio: modo_cardapio.value,
+    horario_abertura: horario_abertura.value || null,
+    horario_fechamento: horario_fechamento.value || null,
+    layout_categorias: layout_categorias.checked,
+    cor_primaria: cor_primaria.value || null
+  };
+
+  if(remover_logo.checked) payload.logo_url = null;
+  if(remover_banner.checked) payload.banner_url = null;
+
+  if(logo_file.files[0]){
+    payload.logo_url = await uploadArquivo(logo_file.files[0], "logos");
+  }
+  if(banner_file.files[0]){
+    payload.banner_url = await uploadArquivo(banner_file.files[0], "banners");
+  }
+
+  const { data: existente } = await sb
+    .from("config_site")
+    .select("id")
+    .eq("app_id", app_id)
+    .maybeSingle();
+
+  const res = existente
+    ? await sb.from("config_site").update(payload).eq("app_id", app_id)
+    : await sb.from("config_site").insert({ ...payload, app_id });
+
+  if(res.error){
+    alert(res.error.message);
+    return;
+  }
+
+  alert("Configurações salvas 🔥");
+}
+
+// ================= LOAD =================
+(async()=>{
+  const {data}=await sb
+    .from("config_site")
+    .select("*")
+    .eq("app_id",app_id)
+    .maybeSingle();
+
+  if(!data) return;
+
+  nome_site.value=data.nome_site||"";
+  whatsapp.value=data.whatsapp||"";
+  modo_cardapio.value=data.modo_cardapio||"venda";
+  horario_abertura.value=data.horario_abertura||"";
+  horario_fechamento.value=data.horario_fechamento||"";
+  cor_primaria.value=data.cor_primaria||"#22c55e";
+  layout_categorias.checked=!!data.layout_categorias;
+
+  if(data.logo_url){
+    logo_preview.src=data.logo_url;
+    logo_preview.style.display="block";
+  }
+  if(data.banner_url){
+    banner_preview.src=data.banner_url;
+    banner_preview.style.display="block";
+  }
+})();
+</script>
+
+</body>
+</html>

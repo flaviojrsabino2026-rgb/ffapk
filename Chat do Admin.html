@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Chat com Suporte</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.box{
+  width:100%;
+  max-width:420px;
+  background:#0f172a;
+  padding:18px;
+  border-radius:16px;
+}
+.chat{
+  background:#020617;
+  border-radius:10px;
+  padding:10px;
+  height:260px;
+  overflow:auto;
+}
+.msg{margin-bottom:6px}
+.admin{color:#38bdf8}
+.super{color:#22c55e}
+input,button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+}
+button{
+  background:#38bdf8;
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h3>💬 Suporte</h3>
+
+  <div class="chat" id="chatBox"></div>
+
+  <input id="mensagem" placeholder="Digite sua mensagem">
+  <button onclick="enviar()">Enviar</button>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* 🔐 dados vindos do login */
+const usuario = {
+  id: "USER_ID",
+  role: "admin",
+  app_id: "APP_ID"
+};
+
+const chatBox = document.getElementById("chatBox");
+
+/* carregar mensagens */
+async function carregarMensagens(){
+  const { data } = await supabase
+    .from("chat_admin")
+    .select("*")
+    .eq("app_id", usuario.app_id)
+    .order("created_at");
+
+  chatBox.innerHTML = "";
+
+  data.forEach(m=>{
+    chatBox.innerHTML += `
+      <div class="msg ${m.remetente}">
+        <b>${m.remetente === "admin" ? "Você" : "Suporte"}:</b>
+        ${m.mensagem}
+      </div>
+    `;
+  });
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+carregarMensagens();
+
+/* enviar */
+window.enviar = async function(){
+  if(!mensagem.value.trim()) return;
+
+  await supabase.from("chat_admin").insert({
+    app_id: usuario.app_id,
+    remetente: "admin",
+    mensagem: mensagem.value.trim()
+  });
+
+  mensagem.value="";
+  carregarMensagens();
+};
+</script>
+
+</body>
+</html>

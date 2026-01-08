@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body style="background:#111;color:#0f0;font-family:Arial;padding:40px">
+
+<script>
+const s = localStorage.getItem("usuario_logado");
+if(!s){
+  alert("Sessão inválida");
+  location.href = "./login.html";
+}
+
+const u = JSON.parse(s);
+if(u.tipo !== "mercado"){
+  alert("Acesso negado");
+  location.href = "./login.html";
+}
+</script>
+
+<h1>ADMIN MERCADO ✅</h1>
+<p id="nome"></p>
+
+<button onclick="logout()">Sair</button>
+
+<script>
+document.getElementById("nome").innerText = u.sistema;
+
+function logout(){
+  localStorage.removeItem("usuario_logado");
+  location.href = "./login.html";
+}
+</script>
+
+</body>
+</html>

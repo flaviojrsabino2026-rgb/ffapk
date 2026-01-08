@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel do Estabelecimento</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#0f172a;
+  --primary:#22c55e;
+  --text:#ffffff;
+  --muted:#94a3b8;
+}
+
+*{
+  box-sizing:border-box;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body{
+  margin:0;
+  background:radial-gradient(1200px circle at top, #0f172a, var(--bg));
+  color:var(--text);
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.container{
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:28px;
+  text-align:center;
+}
+
+.logo img{
+  width:260px;
+  max-width:80%;
+}
+
+.nome{
+  font-size:3.2rem;
+  font-weight:800;
+}
+
+.slogan{
+  font-size:1.6rem;
+  color:var(--muted);
+}
+
+.status{
+  margin-top:20px;
+  padding:18px 40px;
+  border-radius:16px;
+  background:linear-gradient(135deg, var(--primary), #16a34a);
+  color:#052e16;
+  font-size:1.9rem;
+  font-weight:800;
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}
+  70%{box-shadow:0 0 0 28px rgba(34,197,94,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+
+.rodape{
+  position:absolute;
+  bottom:24px;
+  color:var(--muted);
+  font-size:1rem;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="logo">
+    <img id="logo" src="" alt="Logo">
+  </div>
+
+  <div class="nome" id="nome">Carregando...</div>
+  <div class="slogan" id="slogan"></div>
+
+  <div class="status" id="status">Aguardando</div>
+
+  <div class="rodape">Sistema Digital • TV Mode</div>
+</div>
+
+<script>
+// 🔐 SUPABASE
+const supabase = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+)
+
+// 📌 pega app_id da URL
+const params = new URLSearchParams(window.location.search)
+const app_id = params.get("app_id")
+
+if(!app_id){
+  document.body.innerHTML = "<h1 style='color:red'>APP_ID não informado</h1>"
+  throw new Error("app_id ausente")
+}
+
+// 🔄 carregar dados do negócio
+async function carregarEstabelecimento(){
+  const { data, error } = await supabase
+    .from("estabelecimentos")
+    .select("*")
+    .eq("id", app_id)
+    .single()
+
+  if(error){
+    console.error(error)
+    return
+  }
+
+  document.getElementById("nome").innerText = data.nome
+  document.getElementById("slogan").innerText = data.slogan || ""
+  document.getElementById("status").innerText = data.status || "Pedidos Abertos"
+  document.getElementById("logo").src = data.logo_url
+
+  if(data.cor_primaria){
+    document.documentElement.style.setProperty("--primary", data.cor_primaria)
+  }
+}
+
+carregarEstabelecimento()
+
+// 🔁 atualiza sozinho a cada 10s
+setInterval(carregarEstabelecimento, 10000)
+</script>
+
+</body>
+</html>

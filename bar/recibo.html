@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Recibo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  font-family:Arial, sans-serif;
+  color:#000;
+  background:#fff;
+  margin:20px;
+}
+h2{text-align:center;margin-bottom:10px}
+hr{margin:10px 0}
+.item{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+}
+.total{
+  font-size:18px;
+  font-weight:bold;
+  text-align:right;
+}
+small{font-size:12px}
+@media print{
+  button{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<button onclick="window.print()">🖨️ Imprimir</button>
+
+<h2>RECIBO</h2>
+<div id="info"></div>
+<hr>
+<div id="itens"></div>
+<hr>
+<div class="total" id="total"></div>
+
+<script>
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+const params = new URLSearchParams(location.search);
+const pedidoId = params.get("pedido");
+const app_id = params.get("app_id");
+
+async function carregarRecibo(){
+  const { data, error } = await sb
+    .from("pedidos")
+    .select(`
+      id,
+      recebido_por,
+      recebido_em,
+      mesas(numero_mesa),
+      pedido_itens(nome_produto,quantidade,preco)
+    `)
+    .eq("id", pedidoId)
+    .eq("app_id", app_id)
+    .single();
+
+  if(error || !data){
+    document.body.innerHTML = "Erro ao carregar recibo";
+    return;
+  }
+
+  let total = 0;
+  const info = document.getElementById("info");
+  const itens = document.getElementById("itens");
+
+  info.innerHTML = `
+    <b>${data.mesas ? "Mesa " + data.mesas.numero_mesa : "Cliente"}</b><br>
+    Data: ${new Date(data.recebido_em).toLocaleString()}<br>
+    Atendido por: ${data.recebido_por || "-"}
+  `;
+
+  data.pedido_itens.forEach(i=>{
+    const sub = i.quantidade * i.preco;
+    total += sub;
+
+    itens.innerHTML += `
+      <div class="item">
+        <span>${i.quantidade}x ${i.nome_produto}</span>
+        <span>R$ ${sub.toFixed(2)}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("total").innerText =
+    "TOTAL: R$ " + total.toFixed(2);
+}
+
+carregarRecibo();
+</script>
+
+</body>
+</html>
