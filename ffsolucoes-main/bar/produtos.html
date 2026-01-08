@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Produtos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.topo{
+  background:#0f172a;
+  padding:16px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.container{
+  padding:32px;
+  max-width:1100px;
+  margin:auto;
+}
+form{
+  background:#0f172a;
+  padding:24px;
+  border-radius:18px;
+  margin-bottom:32px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+input, select, button{
+  padding:12px;
+  border-radius:10px;
+  border:none;
+}
+select{
+  background:#fff;
+  color:#000;
+}
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+.lista{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+}
+.card{
+  background:#0f172a;
+  border-radius:18px;
+  padding:16px;
+}
+.card img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+small{color:#cbd5f5}
+.desativar{background:#ef4444;color:#fff;margin-top:8px;}
+.excluir{background:#7f1d1d;color:#fff;margin-top:6px;}
+.repor{background:#2563eb;color:#fff;margin-top:6px;}
+</style>
+</head>
+
+<body>
+
+<div class="topo">
+  <h2>🍔 Produtos</h2>
+  <button onclick="history.back()">⬅ Voltar</button>
+</div>
+
+<div class="container">
+
+  <!-- FORM PRODUTO -->
+  <form id="formProduto">
+    <input id="nome" placeholder="Nome do produto" required>
+    <input id="preco" type="number" step="0.01" placeholder="Preço" required>
+    <input id="estoque" type="number" min="0" placeholder="Estoque inicial" required>
+
+    <!-- CATEGORIA (continua igual) -->
+    <select id="categoria" required></select>
+
+    <!-- 🔥 DESTINO DO PRODUTO -->
+    <select id="destino" required>
+      <option value="cozinha">🍳 Cozinha</option>
+      <option value="bar">🍺 Bar</option>
+    </select>
+
+    <input id="imagem" type="file" accept="image/*">
+    <button type="submit">Salvar produto</button>
+  </form>
+
+  <!-- LISTA -->
+  <div class="lista" id="lista"></div>
+
+</div>
+
+<script>
+// ================= ADMIN =================
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+if(!admin || !admin.app_id){
+  alert("Sessão expirada");
+  location.href="../auth/login.html";
+}
+
+// ================= SUPABASE =================
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+// ================= CATEGORIAS =================
+async function carregarCategorias(){
+  const select = document.getElementById("categoria");
+
+  const { data, error } = await sb
+    .from("categorias")
+    .select("id,nome")
+    .eq("app_id", admin.app_id)
+    .eq("ativo", true)
+    .order("nome");
+
+  if(error){
+    console.error(error);
+    select.innerHTML = `<option disabled>Erro ao carregar</option>`;
+    return;
+  }
+
+  select.innerHTML =
+    `<option value="" disabled selected>Categoria</option>` +
+    data.map(c=>`<option value="${c.id}">${c.nome}</option>`).join("");
+}
+
+// ================= UPLOAD IMAGEM =================
+function limparNomeArquivo(nome){
+  return nome
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9._-]/g, "");
+}
+
+async function uploadImagem(file){
+  if(!file) return null;
+
+  const nomeLimpo = limparNomeArquivo(file.name);
+  const path = `${admin.app_id}/${Date.now()}_${nomeLimpo}`;
+
+  const { error } = await sb.storage
+    .from("produtos")
+    .upload(path, file, { upsert:true });
+
+  if(error){
+    console.error(error);
+    alert("Erro ao enviar imagem");
+    return null;
+  }
+
+  return sb.storage.from("produtos").getPublicUrl(path).data.publicUrl;
+}
+
+// ================= SALVAR PRODUTO =================
+document.getElementById("formProduto").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const nome = document.getElementById("nome").value.trim();
+  const preco = Number(document.getElementById("preco").value);
+  const estoque = Number(document.getElementById("estoque").value);
+  const categoria_id = document.getElementById("categoria").value;
+  const destino = document.getElementById("destino").value;
+  const file = document.getElementById("imagem").files[0];
+
+  const foto = await uploadImagem(file);
+
+  const { error } = await sb.from("produtos").insert({
+    app_id: admin.app_id,
+    nome,
+    preco,
+    estoque,
+    categoria_id,
+    destino,       // 🔥 AQUI ESTÁ A CHAVE
+    foto,
+    ativo: true
+  });
+
+  if(error){
+    console.error(error);
+    alert("Erro ao salvar produto");
+    return;
+  }
+
+  e.target.reset();
+  listarProdutos();
+});
+
+// ================= LISTAR PRODUTOS =================
+async function listarProdutos(){
+  const { data, error } = await sb
+    .from("produtos")
+    .select(`
+      id,nome,preco,estoque,foto,destino,
+      categorias(nome)
+    `)
+    .eq("app_id", admin.app_id)
+    .eq("ativo", true)
+    .order("created_at", { ascending:false });
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  const lista = document.getElementById("lista");
+  lista.innerHTML="";
+
+  data.forEach(p=>{
+    const div = document.createElement("div");
+    div.className="card";
+    div.innerHTML = `
+      ${p.foto ? `<img src="${p.foto}">` : ""}
+      <b>${p.nome}</b><br>
+      <b>R$ ${Number(p.preco).toFixed(2)}</b><br>
+      <small>Categoria: ${p.categorias?.nome || "—"}</small><br>
+      <small>Destino: ${p.destino === "bar" ? "🍺 Bar" : "🍳 Cozinha"}</small><br>
+      <small>Estoque: ${p.estoque}</small>
+
+      <button class="repor" onclick="reporEstoque('${p.id}', ${p.estoque})">Repor estoque</button>
+      <button class="desativar" onclick="desativarProduto('${p.id}')">Desativar</button>
+      <button class="excluir" onclick="excluirProduto('${p.id}','${p.nome}')">Excluir</button>
+    `;
+    lista.appendChild(div);
+  });
+}
+
+// ================= AÇÕES =================
+async function reporEstoque(id, atual){
+  const qtd = prompt(`Quantidade para REPOR:\nEstoque atual: ${atual}`, "1");
+  if(!qtd) return;
+
+  const n = Number(qtd);
+  if(isNaN(n) || n<=0) return alert("Quantidade inválida");
+
+  await sb.from("produtos")
+    .update({ estoque: atual + n })
+    .eq("id", id);
+
+  listarProdutos();
+}
+
+async function desativarProduto(id){
+  if(!confirm("Desativar produto?")) return;
+  await sb.from("produtos").update({ ativo:false }).eq("id", id);
+  listarProdutos();
+}
+
+async function excluirProduto(id, nome){
+  if(!confirm(`Excluir DEFINITIVAMENTE?\n\n${nome}`)) return;
+  await sb.from("produtos").delete().eq("id", id);
+  listarProdutos();
+}
+
+// ================= INIT =================
+carregarCategorias();
+listarProdutos();
+</script>
+
+</body>
+</html>

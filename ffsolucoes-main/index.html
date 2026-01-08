@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FF Soluções</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<style>
+:root {
+  --bg1: #02060d;
+  --bg2: #0a1a2f;
+  --primary: #00b4ff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  background:
+    radial-gradient(900px circle at center, #102a44 0%, transparent 65%) no-repeat,
+    linear-gradient(180deg, var(--bg2), var(--bg1));
+}
+
+/* ===== WRAPPER ===== */
+.wrapper {
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 20px;
+}
+
+/* ===== MODULES ===== */
+.modules {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.module {
+  background: rgba(0, 180, 255, 0.14);
+  border-radius: 18px;
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(0, 180, 255, 0.25);
+  transition: .2s;
+}
+
+.module:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 30px var(--primary);
+}
+
+.module i {
+  font-size: 26px;
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+
+.module span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ===== CARD CENTRAL ===== */
+.container {
+  height: 240px;
+  border-radius: 26px;
+  background: rgba(10, 26, 47, 0.92);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo {
+  width: 190px;
+  cursor: pointer;
+}
+
+.tagline {
+  margin-top: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* ===== CHAT ===== */
+#chatButton {
+  position: fixed;
+  bottom: 10px;
+  right: 14px;
+  width: 54px;
+  height: 54px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px var(--primary);
+  z-index: 999;
+}
+
+#chatPanel {
+  position: fixed;
+  bottom: 72px;
+  right: 14px;
+  width: 320px;
+  max-height: 420px;
+  background: rgba(10,26,47,0.96);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0,180,255,0.5);
+  z-index: 999;
+}
+
+#chatPublicoMsgs {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.chat-msg {
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ===== FORM ORÇAMENTO ===== */
+#formOrcamento {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#formOrcamento.active {
+  display: flex;
+}
+
+#formOrcamento .box {
+  background: #0a1a2f;
+  padding: 20px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 0 40px rgba(0,180,255,.4);
+}
+
+#formOrcamento input,
+#formOrcamento textarea,
+#formOrcamento button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <!-- 🔥 TOPO -->
+  <div class="modules">
+    <div class="module" onclick="go('mercado')">
+      <i class="fa-solid fa-cart-shopping"></i>
+      <span>Mercado</span>
+    </div>
+    <div class="module" onclick="go('locadora')">
+      <i class="fa-solid fa-car"></i>
+      <span>Locadora</span>
+    </div>
+    <div class="module" onclick="go('bar')">
+      <i class="fa-solid fa-utensils"></i>
+      <span>Bar & Rest.</span>
+    </div>
+  </div>
+
+  <!-- 🔷 CENTRO -->
+  <div class="container">
+    <img src="ff.png" class="logo" id="logoSecreto">
+    <span class="tagline">Transformando ideias em sistemas</span>
+  </div>
+
+  <!-- 🔥 BASE -->
+  <div class="modules">
+    <div class="module" onclick="go('hotel')">
+      <i class="fa-solid fa-hotel"></i>
+      <span>Hotel</span>
+    </div>
+    <div class="module" onclick="go('ti')">
+      <i class="fa-solid fa-laptop-code"></i>
+      <span>TI</span>
+    </div>
+    <div class="module" onclick="go('telecom')">
+      <i class="fa-solid fa-tower-broadcast"></i>
+      <span>Telecom</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- CHAT -->
+<div id="chatButton" onclick="toggleChat()">
+  <i class="fa-solid fa-comments"></i>
+</div>
+
+<div id="chatPanel" class="hidden">
+  <div style="padding:10px;font-weight:600">📢 Avisos</div>
+  <div id="chatPublicoMsgs"></div>
+  <button onclick="abrirFormulario()" style="margin:10px">
+    📋 Faça seu orçamento
+  </button>
+</div>
+
+<!-- FORM -->
+<div id="formOrcamento" class="hidden">
+  <div class="box">
+    <h3>Solicitar orçamento</h3>
+    <input id="orcNome" placeholder="Seu nome">
+    <input id="orcTel" placeholder="Telefone / WhatsApp">
+    <textarea id="orcMsg" placeholder="Descreva o que precisa"></textarea>
+    <button onclick="enviarOrcamento()">Enviar</button>
+    <button onclick="fecharFormulario()">Cancelar</button>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+const appId = new URLSearchParams(location.search).get("app");
+
+/* CHAT */
+async function carregarChatPublico(){
+  const { data } = await supabase
+    .from("chat_publico")
+    .select("*")
+    .or(`app_id.is.null,app_id.eq.${appId}`)
+    .order("created_at");
+
+  chatPublicoMsgs.innerHTML="";
+  data.forEach(m=>{
+    chatPublicoMsgs.innerHTML += `<div class="chat-msg">${m.mensagem}</div>`;
+  });
+}
+
+supabase.channel("chat-publico")
+  .on("postgres_changes",{ event:"INSERT", table:"chat_publico" },payload=>{
+    if(!payload.new.app_id || payload.new.app_id === appId){
+      chatPublicoMsgs.innerHTML += `<div class="chat-msg">${payload.new.mensagem}</div>`;
+    }
+  }).subscribe();
+
+/* FORM */
+window.abrirFormulario = ()=>{
+  formOrcamento.classList.remove("hidden");
+  formOrcamento.classList.add("active");
+};
+
+window.fecharFormulario = ()=>{
+  formOrcamento.classList.remove("active");
+  formOrcamento.classList.add("hidden");
+};
+
+window.enviarOrcamento = async ()=>{
+  if(!orcTel.value.trim()){
+    alert("Informe o telefone");
+    return;
+  }
+
+  await supabase.from("orcamentos").insert({
+    app_id: appId,
+    nome: orcNome.value,
+    telefone: orcTel.value,
+    mensagem: orcMsg.value
+  });
+
+  alert("Orçamento enviado!");
+  fecharFormulario();
+};
+
+/* UI */
+window.toggleChat = ()=>{
+  chatPanel.classList.toggle("hidden");
+  carregarChatPublico();
+};
+
+window.go = tipo=>{
+  const map = {
+    mercado:"mercado/login.html",
+    locadora:"locadora/admin.html",
+    bar:"bar/admin.html",
+    hotel:"hotel/admin.html",
+    ti:"ti/admin.html",
+    telecom:"telecom/admin.html"
+  };
+  location.href = map[tipo];
+};
+</script>
+
+<!-- 🔐 ACESSO SECRETO -->
+<script>
+let holdTimer = null;
+let holdStart = 0;
+const TEMPO_SEGURAR = 30000;
+
+const logo = document.getElementById("logoSecreto");
+
+if (logo) {
+  const iniciarHold = () => {
+    holdStart = Date.now();
+    holdTimer = setTimeout(() => {
+      window.location.href = "super/admin.html";
+    }, TEMPO_SEGURAR);
+  };
+
+  const cancelarHold = () => {
+    if (Date.now() - holdStart < TEMPO_SEGURAR) {
+      clearTimeout(holdTimer);
+    }
+  };
+
+  logo.addEventListener("mousedown", iniciarHold);
+  logo.addEventListener("touchstart", iniciarHold);
+  logo.addEventListener("mouseup", cancelarHold);
+  logo.addEventListener("mouseleave", cancelarHold);
+  logo.addEventListener("touchend", cancelarHold);
+}
+</script>
+
+</body>
+</html>
+

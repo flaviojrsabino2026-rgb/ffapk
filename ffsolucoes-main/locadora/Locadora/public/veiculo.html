@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Veículo | Locadora</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{--primaria:#e30613;--bg:#f4f4f4}
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:var(--bg)}
+
+.topo{background:#fff;border-bottom:3px solid var(--primaria);padding:14px;text-align:center;font-weight:700}
+.container{max-width:900px;margin:20px auto;padding:16px}
+.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 25px rgba(0,0,0,.12)}
+
+.hero img{width:100%;max-height:420px;object-fit:contain;background:#eee;border-radius:14px}
+.preco{font-size:20px;font-weight:700;margin:10px 0}
+.status{font-weight:700;margin-bottom:12px}
+.status.disponivel{color:#16a34a}
+.status.alugado{color:#e30613}
+
+label{display:block;margin-top:12px;font-weight:600}
+input{width:100%;padding:12px;margin-top:6px;border-radius:10px;border:1px solid #ccc}
+
+.btn{margin-top:12px;background:var(--primaria);color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:700;cursor:pointer}
+.btn-sec{background:#222}
+
+video, canvas, img.preview{width:100%;margin-top:8px;border-radius:10px;display:none}
+</style>
+</head>
+
+<body>
+
+<div class="topo">Detalhes do Veículo</div>
+
+<div class="container">
+<div class="card">
+
+<div class="hero"><img id="imgVeiculo"></div>
+<h2 id="modelo"></h2>
+<div class="preco" id="preco"></div>
+<div id="status" class="status"></div>
+
+<div id="acaoAlugar" class="btn" onclick="abrirFormulario()" style="display:none">
+Alugar este veículo
+</div>
+
+<div <label>CPF</label>
+<input id="fCpf" placeholder="000.000.000-00">
+
+<label>Endereço</label>
+<input id="fEndereco" placeholder="Rua, número">
+
+<label>Bairro</label>
+<input id="fBairro">
+
+<label>Cidade</label>
+<input id="fCidade">
+
+<label>Estado</label>
+<input id="fEstado" placeholder="UF">
+">
+
+<label>Nome</label>
+<input id="fNome">
+
+<label>Telefone</label>
+<input id="fTelefone">
+
+<label>Dias</label>
+<input id="fDias" type="number" min="1">
+<label>Total</label>
+<input id="fTotal" readonly>
+
+<!-- DOCUMENTOS -->
+<div id="docs"></div>
+
+<div class="btn" onclick="enviarSolicitacao()">Enviar solicitação</div>
+</div>
+
+</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const appId = params.get("app");
+const veiculoId = params.get("id");
+
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+let DIARIA=0, MODELO="", arquivos={}, stream=null;
+
+/* LOAD VEÍCULO */
+async function carregar(){
+  const { data:v } = await sb.from("veiculos")
+    .select("*").eq("id",veiculoId).eq("app_id",appId).single();
+
+  if(!v){ alert("Veículo não encontrado"); return; }
+
+  DIARIA=v.diaria; MODELO=v.modelo;
+  imgVeiculo.src=v.foto_url||"https://via.placeholder.com/800x400";
+  modelo.innerText=MODELO;
+  preco.innerText=`R$ ${DIARIA} / diária`;
+
+  if(v.status==="alugado"){
+    status.innerText="🔒 Alugado";
+  }else{
+    status.innerText="✅ Disponível";
+    acaoAlugar.style.display="block";
+  }
+
+  criarCameras();
+}
+
+/* FORM */
+function abrirFormulario(){
+  formSolicitacao.style.display="block";
+  acaoAlugar.style.display="none";
+}
+
+/* CÂMERAS – MESMO PADRÃO QUE FUNCIONAVA */
+function criarCameras(){
+  const tipos = [
+    ["selfie","user"],
+    ["rg_frente","environment"],
+    ["rg_verso","environment"],
+    ["cpf","environment"],
+    ["cnh","environment"]
+  ];
+
+  tipos.forEach(([t,f])=>{
+    docs.innerHTML += `
+      <label>${t.replace("_"," ").toUpperCase()}</label>
+      <button class="btn btn-sec" onclick="abrirCamera('${t}','${f}')">Abrir câmera</button>
+      <video id="video-${t}"></video>
+      <button class="btn btn-sec" id="cap-${t}" onclick="capturar('${t}')" style="display:none">Capturar</button>
+      <img id="prev-${t}" class="preview">
+      <canvas id="canvas-${t}" hidden></canvas>
+    `;
+  });
+
+  docs.innerHTML += `
+    <label>Assinatura</label>
+    <canvas id="assinatura"></canvas>
+  `;
+
+  initAssinatura();
+}
+
+async function abrirCamera(tipo,facing){
+  fecharCamera();
+  const video = document.getElementById("video-"+tipo);
+  const cap = document.getElementById("cap-"+tipo);
+  stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
+  video.srcObject=stream;
+  video.style.display="block";
+  cap.style.display="block";
+  await video.play();
+}
+
+function capturar(tipo){
+  const video=document.getElementById("video-"+tipo);
+  const canvas=document.getElementById("canvas-"+tipo);
+  const img=document.getElementById("prev-"+tipo);
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  canvas.getContext("2d").drawImage(video,0,0);
+  canvas.toBlob(b=>{
+    arquivos[tipo]=b;
+    img.src=URL.createObjectURL(b);
+    img.style.display="block";
+  });
+  fecharCamera();
+}
+
+function fecharCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.querySelectorAll("video").forEach(v=>{
+    v.pause();v.srcObject=null;v.style.display="none";
+  });
+  document.querySelectorAll("[id^='cap-']").forEach(b=>b.style.display="none");
+}
+
+/* ASSINATURA */
+function initAssinatura(){
+  const c=document.getElementById("assinatura");
+  const ctx=c.getContext("2d");
+  c.height=160; let d=false;
+  c.onmousedown=e=>{d=true;ctx.beginPath();ctx.moveTo(e.offsetX,e.offsetY)};
+  c.onmousemove=e=>{if(d){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke()}};
+  window.onmouseup=()=>d=false;
+  c.toBlob=b=>arquivos.assinatura=b;
+}
+
+/* UPLOAD */
+async function upload(file,pasta){
+  if(!file) return null;
+  const path=`${pasta}/${Date.now()}.png`;
+  await sb.storage.from("documentos").upload(path,file);
+  return sb.storage.from("documentos").getPublicUrl(path).data.publicUrl;
+}
+
+/* INSERT */
+async function enviarSolicitacao(){
+  const dias=Number(fDias.value);
+  const total=dias*DIARIA;
+
+  const payload={
+    app_id:appId,
+    veiculo_id:veiculoId,
+    nome:fNome.value,
+    telefone:fTelefone.value,
+    dias,
+    total,
+    status:"solicitada",
+    selfie_url: await upload(arquivos.selfie,"selfie"),
+    rg_frente_url: await upload(arquivos.rg_frente,"rg_frente"),
+    rg_verso_url: await upload(arquivos.rg_verso,"rg_verso"),
+    cpf_url: await upload(arquivos.cpf,"cpf"),
+    cnh_url: await upload(arquivos.cnh,"cnh"),
+    assinatura_url: await upload(arquivos.assinatura,"assinatura")
+  };
+
+  await sb.from("locacoes").insert(payload);
+  alert("Solicitação enviada!");
+}
+
+carregar();
+</script>
+
+</body>
+</html>

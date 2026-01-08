@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Suporte Técnico - Léo Telecom</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body {
+  background: #000;
+  color: #fff;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #00aaff;
+  margin-bottom: 20px;
+}
+.voltar {
+  color: #00aaff;
+  text-decoration: none;
+  border: 1px solid #00aaff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  transition: 0.3s;
+}
+.voltar:hover {
+  background: #00aaff;
+  color: #000;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 400px;
+}
+label {
+  font-weight: bold;
+}
+select, input, textarea {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #00aaff;
+  background: #0a0a0a;
+  color: #fff;
+  width: 100%;
+  font-size: 16px;
+}
+textarea {
+  resize: vertical;
+}
+#solucoes {
+  background: #111;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #00aaff;
+}
+button {
+  background: #00aaff;
+  color: #000;
+  border: none;
+  padding: 12px 20px;
+  font-size: 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+button:hover {
+  background: #005f99;
+  color: #fff;
+}
+</style>
+</head>
+<body>
+
+<header><i class="fas fa-headset"></i> Suporte Técnico</header>
+
+<a href="index.html" class="voltar"><i class="fas fa-home"></i> Voltar</a>
+
+<form id="suporteForm">
+  <label for="problema">Selecione o problema:</label>
+  <select id="problema" required>
+    <option value="" disabled selected>Escolha um problema</option>
+    <option value="internet_lenta">Internet lenta</option>
+    <option value="sem_sinal">Sem sinal Wi-Fi</option>
+    <option value="roteador_desligado">Roteador desligado</option>
+    <option value="outro">Outro</option>
+  </select>
+
+  <div id="solucoes"></div>
+
+  <label for="descricao">Descrição adicional:</label>
+  <textarea id="descricao" rows="4" placeholder="Descreva o problema se necessário..."></textarea>
+
+  <button type="submit"><i class="fab fa-whatsapp"></i> Enviar para WhatsApp</button>
+</form>
+
+<script>
+const solucoesDiv = document.getElementById('solucoes');
+const problemaSelect = document.getElementById('problema');
+
+const solucoes = {
+  internet_lenta: [
+    "Reinicie o roteador.",
+    "Verifique se há muitos dispositivos conectados.",
+    "Teste a velocidade usando nosso teste online."
+  ],
+  sem_sinal: [
+    "Confirme se o roteador está ligado.",
+    "Verifique a posição do roteador.",
+    "Reinicie o aparelho."
+  ],
+  roteador_desligado: [
+    "Conecte o cabo de energia.",
+    "Pressione o botão de ligar.",
+    "Aguarde alguns minutos até os LEDs acenderem."
+  ],
+  outro: [
+    "Descreva seu problema no campo abaixo.",
+    "Nosso suporte entrará em contato o mais rápido possível."
+  ]
+};
+
+problemaSelect.addEventListener('change', () => {
+  const valor = problemaSelect.value;
+  if(valor && solucoes[valor]) {
+    solucoesDiv.innerHTML = "<strong>Sugestões:</strong><ul>" + 
+      solucoes[valor].map(item => `<li>${item}</li>`).join('') + "</ul>";
+  } else {
+    solucoesDiv.innerHTML = "";
+  }
+});
+
+document.getElementById('suporteForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const problema = problemaSelect.options[problemaSelect.selectedIndex].text;
+  const descricao = document.getElementById('descricao').value.trim();
+  const mensagem = `Olá, meu problema é: ${problema}%0A${descricao ? 'Descrição adicional: ' + descricao : ''}`;
+
+  // Link do WhatsApp (substitua pelo seu número)
+  const whatsappNumber = "5589981452698";
+  const url = `https://wa.me/${whatsappNumber}?text=${mensagem}`;
+  window.open(url, "_blank");
+});
+</script>
+
+</body>
+</html>

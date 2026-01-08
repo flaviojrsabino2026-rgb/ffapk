@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Contrato de Locação - Gil Veículos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#f4f4f4;color:#000}
+
+header{
+  background:#1f2a44;
+  color:#fff;
+  padding:16px;
+  text-align:center;
+  font-weight:700;
+}
+
+form{
+  padding:16px;
+  display:grid;
+  gap:16px;
+}
+
+.section{
+  background:#fff;
+  padding:14px;
+  border-radius:14px;
+  box-shadow:0 6px 15px rgba(0,0,0,.1);
+}
+
+label{
+  font-size:14px;
+  font-weight:600;
+  display:block;
+  margin-bottom:6px;
+}
+
+input,select{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+  font-size:14px;
+}
+
+button{
+  background:linear-gradient(135deg,#e30613,#b0040f);
+  color:#fff;
+  border:none;
+  padding:12px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  width:100%;
+  margin-top:6px;
+}
+
+video,canvas{
+  width:100%;
+  border-radius:12px;
+  margin-top:8px;
+}
+
+#assinatura{
+  height:180px;
+  border:2px dashed #999;
+  touch-action:none;
+}
+
+small{
+  font-size:12px;
+  color:#555;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  Contrato Digital de Locação – Gil Veículos
+</header>
+
+<form>
+
+<!-- DADOS -->
+<div class="section">
+  <label>Nome completo</label>
+  <input required>
+
+  <label>CPF</label>
+  <input required>
+
+  <label>Telefone / WhatsApp</label>
+  <input type="tel" required>
+</div>
+
+<!-- LOCAÇÃO -->
+<div class="section">
+  <label>Veículo</label>
+  <select id="veiculo">
+    <option value="120">Chevrolet Onix – R$120/dia</option>
+    <option value="140">Hyundai HB20 – R$140/dia</option>
+    <option value="220">Toyota Corolla – R$220/dia</option>
+  </select>
+
+  <label>Data de retirada</label>
+  <input type="date" id="inicio" required>
+
+  <label>Data de devolução</label>
+  <input type="date" id="fim" required>
+
+  <label>Dias de locação</label>
+  <input id="dias" readonly>
+
+  <label>Valor total</label>
+  <input id="total" readonly>
+</div>
+
+<!-- SELFIE -->
+<div class="section">
+  <label>Selfie do cliente</label>
+  <button type="button" onclick="abrirCamera('selfie')">Abrir câmera</button>
+  <video id="video-selfie" autoplay playsinline></video>
+  <button type="button" onclick="capturar('selfie')">Capturar selfie</button>
+  <canvas id="foto-selfie"></canvas>
+</div>
+
+<!-- RG -->
+<div class="section">
+  <label>Documento RG (frente e verso)</label>
+  <button type="button" onclick="abrirCamera('rg')">Abrir câmera</button>
+  <video id="video-rg" autoplay playsinline></video>
+  <button type="button" onclick="capturar('rg')">Capturar RG</button>
+  <canvas id="foto-rg"></canvas>
+</div>
+
+<!-- CPF -->
+<div class="section">
+  <label>Documento CPF (frente e verso)</label>
+  <small>(Se o CPF já constar no RG, use a mesma foto)</small>
+  <button type="button" onclick="abrirCamera('cpf')">Abrir câmera</button>
+  <video id="video-cpf" autoplay playsinline></video>
+  <button type="button" onclick="capturar('cpf')">Capturar CPF</button>
+  <canvas id="foto-cpf"></canvas>
+</div>
+
+<!-- ASSINATURA -->
+<div class="section">
+  <label>Assinatura digital</label>
+  <canvas id="assinatura"></canvas>
+  <button type="button" onclick="limparAssinatura()">Limpar assinatura</button>
+</div>
+
+<div class="section">
+  <label>
+    <input type="checkbox" required>
+    Declaro que as informações e documentos enviados são verdadeiros.
+  </label>
+</div>
+
+<button type="submit">Enviar contrato</button>
+
+</form>
+
+<script>
+/* CALCULAR DIAS */
+function calcular(){
+  const i=new Date(inicio.value);
+  const f=new Date(fim.value);
+  const d=parseFloat(veiculo.value);
+  if(f>i){
+    const dias=(f-i)/(1000*60*60*24);
+    document.getElementById("dias").value=dias;
+    document.getElementById("total").value="R$ "+(dias*d).toFixed(2);
+  }
+}
+inicio.onchange=calcular;
+fim.onchange=calcular;
+veiculo.onchange=calcular;
+
+/* CÂMERA */
+let stream=null;
+function abrirCamera(tipo){
+  const video=document.getElementById(`video-${tipo}`);
+  navigator.mediaDevices.getUserMedia({
+    video:{facingMode:tipo==="selfie"?"user":"environment"}
+  }).then(s=>{
+    stream=s;
+    video.srcObject=s;
+  });
+}
+
+function capturar(tipo){
+  const video=document.getElementById(`video-${tipo}`);
+  const canvas=document.getElementById(`foto-${tipo}`);
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  canvas.getContext("2d").drawImage(video,0,0);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+}
+
+/* ASSINATURA */
+const c=document.getElementById("assinatura");
+const ctx=c.getContext("2d");
+let desenhando=false;
+c.width=c.offsetWidth;
+c.height=180;
+
+c.addEventListener("touchstart",e=>{
+  desenhando=true;
+  const t=e.touches[0];
+  ctx.moveTo(t.clientX-c.offsetLeft,t.clientY-c.offsetTop);
+});
+c.addEventListener("touchmove",e=>{
+  if(!desenhando)return;
+  const t=e.touches[0];
+  ctx.lineTo(t.clientX-c.offsetLeft,t.clientY-c.offsetTop);
+  ctx.stroke();
+});
+c.addEventListener("touchend",()=>desenhando=false);
+
+function limparAssinatura(){
+  ctx.clearRect(0,0,c.width,c.height);
+}
+</script>
+
+</body>
+</html>

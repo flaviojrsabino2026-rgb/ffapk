@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Locações | Painel Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+}
+.topo{
+  background:#0f172a;
+  padding:16px 24px;
+}
+.container{
+  max-width:1100px;
+  margin:30px auto;
+  padding:20px;
+}
+.card{
+  background:#020617;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+}
+.status{
+  font-weight:bold;
+}
+.status.ativa{color:#22c55e}
+.status.finalizada{color:#ef4444}
+.btn{
+  margin-top:10px;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.btn.renovar{background:#3b82f6}
+.btn.finalizar{background:#ef4444}
+</style>
+</head>
+
+<body>
+
+<script>
+const admin = JSON.parse(localStorage.getItem("admin_logado"));
+if(!admin){
+  alert("Acesso negado");
+  location.href="../auth/login.html";
+}
+</script>
+
+<div class="topo">
+  <h2>📑 Locações Ativas</h2>
+</div>
+
+<div class="container" id="lista"></div>
+
+<script>
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+async function carregarLocacoes(){
+  const { data, error } = await sb
+    .from("locacoes")
+    .select("*")
+    .eq("app_id", admin.app_id)
+    .order("created_at",{ascending:false});
+
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  if(error || !data.length){
+    lista.innerHTML = "<p>Nenhuma locação encontrada.</p>";
+    return;
+  }
+
+  data.forEach(l=>{
+    lista.innerHTML += `
+      <div class="card">
+        <b>Veículo:</b> ${l.veiculo}<br>
+        <b>Cliente:</b> ${l.nome}<br>
+        <b>Telefone:</b> ${l.telefone}<br>
+        <b>Dias:</b> ${l.dias}<br>
+        <b>Total:</b> R$ ${l.total}<br>
+        <b>Status:</b>
+        <span class="status ${l.status}">${l.status.toUpperCase()}</span>
+
+        ${
+          l.status === "ativa"
+          ? `
+            <button class="btn renovar" onclick="renovar('${l.id}',${l.diaria})">
+              🔁 Renovar
+            </button>
+            <button class="btn finalizar" onclick="finalizar('${l.id}','${l.veiculo}')">
+              ⛔ Finalizar
+            </button>
+          `
+          : ""
+        }
+      </div>
+    `;
+  });
+}
+
+/* 🔁 RENOVAR */
+async function renovar(id, diaria){
+  const dias = Number(prompt("Quantos dias deseja renovar?"));
+  if(!dias || dias <= 0) return;
+
+  const total = dias * diaria;
+
+  await sb.from("locacoes")
+    .update({
+      dias,
+      total
+    })
+    .eq("id", id);
+
+  alert("Locação renovada");
+  carregarLocacoes();
+}
+
+/* ⛔ FINALIZAR */
+async function finalizar(id, veiculo){
+  if(!confirm("Finalizar locação?")) return;
+
+  await sb.from("locacoes")
+    .update({ status:"finalizada" })
+    .eq("id", id);
+
+  await sb.from("veiculos")
+    .update({
+      status:"disponivel",
+      data_fim:null,
+      dias_alugado:null
+    })
+    .eq("modelo", veiculo)
+    .eq("app_id", admin.app_id);
+
+  carregarLocacoes();
+}
+
+carregarLocacoes();
+</script>
+
+</body>
+</html>

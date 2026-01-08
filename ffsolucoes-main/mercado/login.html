@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel | Mercado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card{
+  width:100%;
+  max-width:480px;
+  background:#0f172a;
+  padding:35px;
+  border-radius:20px;
+  text-align:center;
+}
+h2{margin-top:0}
+.info{
+  margin:20px 0;
+  opacity:.85;
+}
+button{
+  width:100%;
+  padding:16px;
+  margin-top:14px;
+  border-radius:14px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:16px;
+}
+.entrar{
+  background:#22c55e;
+  color:#000;
+}
+.relatorio{
+  background:#0ea5e9;
+  color:#fff;
+}
+.sair{
+  background:#e53935;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>🏪 Mercado</h2>
+
+  <div class="info" id="info"></div>
+
+  <button class="entrar" onclick="entrar()">🛠️ Painel do Mercado</button>
+  <button class="relatorio" onclick="abrirRelatorio()">📊 Relatório do Dia</button>
+  <button class="sair" onclick="logout()">🚪 Sair</button>
+</div>
+
+<script>
+/* 🔐 VALIDA SESSÃO (BLINDADO) */
+const raw = localStorage.getItem("admin_logado");
+
+if(!raw){
+  alert("Sessão inválida. Faça login novamente.");
+  window.location.href = "../auth/login.html";
+}
+
+const admin = JSON.parse(raw);
+const tipo = String(admin.tipo || "").trim().toLowerCase();
+
+if(tipo !== "mercado"){
+  alert("Acesso negado.");
+  window.location.href = "../auth/login.html";
+}
+
+/* INFO NA TELA */
+document.getElementById("info").innerHTML = `
+  <b>Usuário:</b> ${admin.usuario}<br>
+  <b>ID do Mercado:</b> ${admin.app_id}
+`;
+
+/* ENTRAR NO PAINEL */
+function entrar(){
+  window.location.href = "admin.html";
+}
+
+/* ABRIR RELATÓRIO */
+function abrirRelatorio(){
+  window.location.href = "relatorios.html";
+}
+
+/* LOGOUT */
+function logout(){
+  localStorage.removeItem("admin_logado");
+  window.location.href = "../auth/login.html";
+}
+</script>
+
+</body>
+</html>

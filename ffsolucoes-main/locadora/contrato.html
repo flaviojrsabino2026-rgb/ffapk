@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Finalização da Locação</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f4f4;
+}
+header{
+  background:#fff;
+  border-bottom:3px solid #e30613;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+header img{
+  height:42px;
+  display:none;
+}
+header h2{
+  margin:0;
+  font-size:20px;
+}
+.container{
+  max-width:900px;
+  margin:20px auto;
+  background:#fff;
+  border-radius:16px;
+  padding:20px;
+}
+label{font-weight:700;font-size:14px;margin-top:12px;display:block}
+input{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:10px;
+  border:1px solid #ccc;
+}
+.btn{
+  margin-top:16px;
+  background:#e30613;
+  color:#fff;
+  padding:14px;
+  border-radius:12px;
+  font-weight:700;
+  text-align:center;
+  cursor:pointer;
+}
+canvas{
+  width:100%;
+  max-width:100%;
+  border:2px dashed #ccc;
+  border-radius:12px;
+  margin-top:10px;
+}
+video{
+  width:100%;
+  border-radius:12px;
+  display:none;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <img id="logo">
+  <h2 id="nomeSite">Finalização da Locação</h2>
+</header>
+
+<div class="container">
+
+  <label>Veículo</label>
+  <input id="veiculo" readonly>
+
+  <label>Nome</label>
+  <input id="nome">
+
+  <label>CPF</label>
+  <input id="cpf">
+
+  <label>Telefone</label>
+  <input id="telefone">
+
+  <label>Dias</label>
+  <input id="dias" readonly>
+
+  <label>Total</label>
+  <input id="total" readonly>
+
+  <div class="btn" onclick="abrirCamera()">📸 Tirar Selfie</div>
+  <video id="video" playsinline></video>
+  <canvas id="selfie"></canvas>
+
+  <label>Assinatura</label>
+  <canvas id="assinatura" height="160"></canvas>
+
+  <div class="btn" onclick="finalizar()">Finalizar Contrato</div>
+
+</div>
+
+<script>
+/* SUPABASE */
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* PARAM */
+const params = new URLSearchParams(location.search);
+const locacaoId = params.get("locacao");
+if(!locacaoId){
+  alert("Contrato inválido");
+  throw new Error("sem locacao");
+}
+
+let stream = null;
+let LOCACAO = null;
+
+/* CARREGAR */
+async function carregar(){
+  const { data:locacao } = await sb
+    .from("locacoes")
+    .select("*")
+    .eq("id", locacaoId)
+    .single();
+
+  if(!locacao){
+    alert("Contrato não disponível");
+    return;
+  }
+
+  if(locacao.status !== "ativa"){
+    alert("Aguardando aprovação da locadora");
+    return;
+  }
+
+  if(locacao.contrato_status === "finalizado"){
+    alert("Contrato já finalizado");
+    return;
+  }
+
+  LOCACAO = locacao;
+
+  /* CONFIG SITE */
+  const { data:config } = await sb
+    .from("config_site")
+    .select("*")
+    .eq("app_id", locacao.app_id)
+    .single();
+
+  if(config){
+    if(config.logo_url){
+      logo.src = config.logo_url;
+      logo.style.display = "block";
+    }
+    nomeSite.innerText = config.nome_site || "Finalização da Locação";
+  }
+
+  veiculo.value = locacao.veiculo_nome || "Veículo";
+  nome.value = locacao.nome || "";
+  telefone.value = locacao.telefone || "";
+  dias.value = locacao.dias;
+  total.value = "R$ " + locacao.total;
+}
+
+carregar();
+
+/* CAMERA */
+async function abrirCamera(){
+  stream = await navigator.mediaDevices.getUserMedia({video:true});
+  video.srcObject = stream;
+  video.style.display = "block";
+  video.play();
+}
+
+function capturar(){
+  selfie.width = video.videoWidth;
+  selfie.height = video.videoHeight;
+  selfie.getContext("2d").drawImage(video,0,0);
+  video.pause();
+  video.srcObject = null;
+  video.style.display = "none";
+  stream.getTracks().forEach(t=>t.stop());
+}
+
+/* ASSINATURA */
+const ctx = assinatura.getContext("2d");
+let desenhando=false;
+assinatura.addEventListener("mousedown",e=>{
+  desenhando=true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX,e.offsetY);
+});
+assinatura.addEventListener("mousemove",e=>{
+  if(!desenhando) return;
+  ctx.lineTo(e.offsetX,e.offsetY);
+  ctx.stroke();
+});
+window.addEventListener("mouseup",()=>desenhando=false);
+
+/* FINALIZAR */
+async function finalizar(){
+  await sb.from("locacoes")
+    .update({ contrato_status:"finalizado" })
+    .eq("id", LOCACAO.id);
+
+  alert("Contrato finalizado com sucesso!");
+  location.reload();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Admin - Gil Veículos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#f1f5f9}
+
+header{
+  background:#111827;
+  color:#fff;
+  padding:16px;
+  font-size:20px;
+  font-weight:700;
+}
+
+.container{
+  padding:16px;
+  max-width:1200px;
+  margin:auto;
+}
+
+.card{
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,.1);
+  margin-bottom:16px;
+}
+
+.card h3{margin-bottom:8px}
+
+.status{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+}
+.pendente{background:#fde68a;color:#92400e}
+.aprovado{background:#bbf7d0;color:#065f46}
+.recusado{background:#fecaca;color:#7f1d1d}
+
+.btn{
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+  border:none;
+  margin-top:8px;
+}
+.aprovar{background:#16a34a;color:#fff}
+.recusar{background:#dc2626;color:#fff}
+.detalhes{background:#2563eb;color:#fff}
+
+.grid{
+  display:grid;
+  gap:12px;
+}
+
+@media(min-width:768px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+
+<body>
+
+<header>📋 Painel Administrativo – Gil Veículos</header>
+
+<div class="container">
+
+<div class="grid">
+
+<!-- CARD 1 -->
+<div class="card">
+  <h3>Chevrolet Onix</h3>
+  <p><strong>Cliente:</strong> João Silva</p>
+  <p><strong>Dias:</strong> 10</p>
+  <p><strong>Total:</strong> R$ 1.200</p>
+  <span class="status pendente">EM ANÁLISE</span>
+
+  <button class="btn detalhes" onclick="verDetalhes()">Ver detalhes</button>
+  <button class="btn aprovar">Aprovar</button>
+  <button class="btn recusar">Recusar</button>
+</div>
+
+<!-- CARD 2 -->
+<div class="card">
+  <h3>Hyundai HB20</h3>
+  <p><strong>Cliente:</strong> Maria Souza</p>
+  <p><strong>Dias:</strong> 5</p>
+  <p><strong>Total:</strong> R$ 700</p>
+  <span class="status aprovado">APROVADO</span>
+
+  <button class="btn detalhes">Ver detalhes</button>
+</div>
+
+<!-- CARD 3 -->
+<div class="card">
+  <h3>Toyota Corolla</h3>
+  <p><strong>Cliente:</strong> Carlos Lima</p>
+  <p><strong>Dias:</strong> 3</p>
+  <p><strong>Total:</strong> R$ 660</p>
+  <span class="status recusado">RECUSADO</span>
+
+  <button class="btn detalhes">Ver detalhes</button>
+</div>
+
+</div>
+
+</div>
+
+<script>
+function verDetalhes(){
+  alert(`
+DETALHES DO PROCESSO
+
+📄 Dados do cliente
+📸 Selfie
+📸 RG frente / verso
+📸 CPF
+✍️ Assinatura
+
+(Aqui vai abrir um modal depois)
+`);
+}
+</script>
+
+</body>
+</html>

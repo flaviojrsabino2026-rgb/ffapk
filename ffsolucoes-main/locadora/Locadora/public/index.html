@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Locadora</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --primaria:#e30613;
+  --bg:#f4f4f4;
+}
+
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+
+body{margin:0;background:var(--bg)}
+
+/* ================= BANNER ================= */
+.banner{
+  width:100%;
+  background:#000;
+}
+
+.banner img{
+  width:100%;
+  height:360px;
+  object-fit:cover;
+  display:block;
+}
+
+@media(max-width:600px){
+  .banner img{height:220px}
+}
+
+/* ================= LISTA ================= */
+.lista{
+  max-width:1200px;
+  margin:20px auto;
+  padding:16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px;
+}
+
+.card{
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 10px 25px rgba(0,0,0,.12);
+  display:flex;
+  flex-direction:column;
+}
+
+.card img{
+  width:100%;
+  height:180px;
+  object-fit:contain;
+  background:#f1f1f1;
+}
+
+.card .info{
+  padding:14px;
+  flex:1;
+}
+
+.card h3{margin:0}
+
+.preco{font-weight:700;margin:6px 0}
+
+.status{font-weight:700;margin-top:4px}
+.status.disponivel{color:#16a34a}
+.status.alugado{color:#e30613}
+
+.btn{
+  margin:12px;
+  background:var(--primaria);
+  color:#fff;
+  padding:12px;
+  border-radius:12px;
+  text-align:center;
+  font-weight:700;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔥 BANNER -->
+<header class="banner">
+  <img id="bannerImg" src="https://via.placeholder.com/1600x400?text=Locadora">
+</header>
+
+<section class="lista" id="listaVeiculos"></section>
+
+<script>
+/* ================= PARAMS ================= */
+const params = new URLSearchParams(location.search);
+const appId = params.get("app");
+
+if(!appId){
+  document.body.innerHTML =
+    "<h2 style='padding:30px;text-align:center'>Locadora não identificada</h2>";
+  throw new Error("app_id ausente");
+}
+
+/* ================= SUPABASE ================= */
+const sb = supabase.createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+/* ================= CONFIG SITE ================= */
+async function carregarConfig(){
+  const { data, error } = await sb
+    .from("config_site")
+    .select("nome_site,banner_url,cor_primaria")
+    .eq("app_id", appId)
+    .single();
+
+  if(error || !data) return;
+
+  document.title = data.nome_site || "Locadora";
+  document.documentElement.style.setProperty(
+    "--primaria",
+    data.cor_primaria || "#e30613"
+  );
+
+  if(data.banner_url){
+    document.getElementById("bannerImg").src = data.banner_url;
+  }
+}
+
+/* ================= DATA ================= */
+function formatarData(d){
+  return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
+}
+
+/* ================= VEÍCULOS ================= */
+async function carregarVeiculos(){
+  const { data, error } = await sb
+    .from("veiculos")
+    .select("id,modelo,diaria,status,data_fim,foto_url")
+    .eq("app_id", appId);
+
+  const lista = document.getElementById("listaVeiculos");
+  lista.innerHTML = "";
+
+  if(error || !data || !data.length){
+    lista.innerHTML = "<p>Nenhum veículo cadastrado.</p>";
+    return;
+  }
+
+  data.forEach(v=>{
+    const alugado = v.status === "alugado" && v.data_fim;
+
+    lista.innerHTML += `
+      <div class="card">
+        <img src="${v.foto_url || 'https://via.placeholder.com/400x200?text=Veículo'}">
+        <div class="info">
+          <h3>${v.modelo}</h3>
+          <div class="preco">R$ ${v.diaria} / diária</div>
+          ${
+            alugado
+            ? `<div class="status alugado">🔒 Alugado até ${formatarData(v.data_fim)}</div>`
+            : `<div class="status disponivel">✅ Disponível</div>`
+          }
+        </div>
+        <div class="btn" onclick="ver('${v.id}')">Ver detalhes</div>
+      </div>
+    `;
+  });
+}
+
+/* ================= AÇÃO ================= */
+function ver(id){
+  location.href = `./veiculo.html?app=${appId}&id=${id}`;
+}
+
+/* ================= INIT ================= */
+(async()=>{
+  await carregarConfig();
+  await carregarVeiculos();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Chat Super Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#020617;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+.box{
+  width:100%;
+  max-width:520px;
+  background:#0f172a;
+  padding:20px;
+  border-radius:16px;
+}
+.chat{
+  background:#020617;
+  border-radius:10px;
+  padding:10px;
+  height:260px;
+  overflow:auto;
+  margin-top:10px;
+}
+.msg{margin-bottom:8px}
+.admin{color:#38bdf8}
+.super_admin{color:#22c55e}
+select,input,button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+}
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h3>💬 Chat — Super Admin</h3>
+
+  <select id="appSelect">
+    <option value="">Selecione o negócio</option>
+  </select>
+
+  <div class="chat" id="chatBox"></div>
+
+  <input id="mensagem" placeholder="Digite a resposta">
+  <button onclick="enviar()">Enviar</button>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+/* ================= SUPABASE ================= */
+const supabase = createClient(
+  "https://pdajixsoowcyhnjwhgpc.supabase.co",
+  "sb_publishable_LatlFlcxk6IchHe3RNmfwA_9Oq4EsZw"
+);
+
+const appSelect = document.getElementById("appSelect");
+const chatBox = document.getElementById("chatBox");
+let channel;
+
+/* ================= CARREGAR APPS ================= */
+async function carregarApps(){
+  const { data } = await supabase.from("apps").select("id,nome");
+  data.forEach(a=>{
+    appSelect.innerHTML += `<option value="${a.id}">${a.nome}</option>`;
+  });
+}
+carregarApps();
+
+/* ================= CARREGAR MENSAGENS ================= */
+async function carregarMensagens(){
+  if(!appSelect.value) return;
+
+  chatBox.innerHTML="";
+
+  const { data } = await supabase
+    .from("chat_admin")
+    .select("*")
+    .eq("app_id", appSelect.value)
+    .order("created_at");
+
+  data.forEach(m=>{
+    chatBox.innerHTML += `
+      <div class="msg ${m.remetente}">
+        <b>${m.remetente === "admin" ? "Admin" : "Você"}:</b>
+        ${m.mensagem}
+      </div>
+    `;
+  });
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  /* 🔑 MARCA COMO LIDA */
+  await supabase
+    .from("chat_admin")
+    .update({ lida: true })
+    .eq("app_id", appSelect.value)
+    .eq("remetente", "admin");
+}
+
+/* ================= REALTIME ================= */
+function iniciarRealtime(){
+  if(!appSelect.value) return; // ✅ CORREÇÃO PRINCIPAL (EVITA 400)
+  if(channel) supabase.removeChannel(channel);
+
+  channel = supabase
+    .channel("chat-super-" + appSelect.value)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "chat_admin",
+        filter: `app_id=eq.${appSelect.value}`
+      },
+      payload => {
+        const m = payload.new;
+        chatBox.innerHTML += `
+          <div class="msg ${m.remetente}">
+            <b>${m.remetente === "admin" ? "Admin" : "Você"}:</b>
+            ${m.mensagem}
+          </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    )
+    .subscribe();
+}
+
+/* ✅ CORREÇÃO AQUI TAMBÉM */
+appSelect.addEventListener("change", ()=>{
+  if(!appSelect.value) return; // 🔒 evita channel vazio
+  carregarMensagens();
+  iniciarRealtime();
+});
+
+/* ================= ENVIAR ================= */
+window.enviar = async function(){
+  if(!appSelect.value || !mensagem.value.trim()) return;
+
+  await supabase.from("chat_admin").insert({
+    app_id: appSelect.value,
+    remetente: "super_admin",
+    mensagem: mensagem.value.trim(),
+    lida: true
+  });
+
+  mensagem.value="";
+};
+</script>
+
+</body>
+</html>
