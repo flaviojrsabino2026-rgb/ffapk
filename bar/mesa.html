@@ -197,9 +197,11 @@ async function carregarPedido(){
 
   document.getElementById("totalPedido").innerText =
     `Total: R$ ${total.toFixed(2)}`;
+
+  atualizarLiberacao();
 }
 
-/* ===== ADD PRODUTO (CORRIGIDO) ===== */
+/* ===== ADD / REMOVER / DIMINUIR ===== */
 async function addProduto(produtoId){
   if(pedidoAtual.status === "conta_solicitada") return;
 
@@ -234,7 +236,6 @@ async function addProduto(produtoId){
   carregarPedido();
 }
 
-/* ===== ITENS AÇÕES ===== */
 async function diminuirItem(id,q){
   if(q > 1){
     await sb.from("pedido_itens")
@@ -258,7 +259,7 @@ async function removerItem(id){
   carregarPedido();
 }
 
-/* ===== AÇÕES ===== */
+/* ===== ENVIAR / CONTA / LIBERAR ===== */
 async function enviarPedido(){
   await sb.from("pedido_itens")
     .update({status:"confirmado"})
@@ -270,32 +271,46 @@ async function enviarPedido(){
     .eq("id",pedidoAtual.id);
 
   pedidoAtual.status = "enviado";
-  atualizarLiberacao();
   alert("📨 Pedido enviado!");
 }
 
 async function pedirConta(){
+  const { count } = await sb
+    .from("pedido_itens")
+    .select("*",{count:"exact",head:true})
+    .eq("pedido_id",pedidoAtual.id);
+
+  if(count === 0){
+    alert("⚠️ Não é possível pedir conta sem pedido.");
+    return;
+  }
+
   await sb.from("pedidos")
     .update({status:"conta_solicitada"})
     .eq("id",pedidoAtual.id);
 
   pedidoAtual.status = "conta_solicitada";
-  atualizarLiberacao();
   alert("🧾 Conta solicitada!");
 }
 
-/* ===== LIBERAR ===== */
-function atualizarLiberacao(){
+async function atualizarLiberacao(){
   const btn = document.getElementById("btnLiberar");
-  if(pedidoAtual.status === "conta_solicitada"){
-    btn.classList.remove("bloqueado");
-  }else{
-    btn.classList.add("bloqueado");
-  }
+
+  const { count } = await sb
+    .from("pedido_itens")
+    .select("*",{count:"exact",head:true})
+    .eq("pedido_id",pedidoAtual.id);
+
+  btn.classList.toggle("bloqueado", count > 0);
 }
 
 async function liberarMesa(){
-  if(pedidoAtual.status !== "conta_solicitada") return;
+  const { count } = await sb
+    .from("pedido_itens")
+    .select("*",{count:"exact",head:true})
+    .eq("pedido_id",pedidoAtual.id);
+
+  if(count > 0) return;
 
   await sb.from("pedidos")
     .update({status:"finalizado"})
